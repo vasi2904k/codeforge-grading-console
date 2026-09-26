@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-26T18:12:48.681Z",
+  "title": "Design System: CodeForge Grading Console",
+  "extensions": {
+    "shadows": [],
+    "motion": [
+      {
+        "name": "button-background",
+        "value": "background-color .15s",
+        "purpose": "Button hover feedback; disabled for reduced motion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "scroll-behavior:auto; animation:none!important; transition:none!important",
+        "purpose": "Reduced-motion override."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop",
+        "value": "1000px"
+      },
+      {
+        "name": "stacked-workspace",
+        "value": "760px"
+      },
+      {
+        "name": "narrow-phone",
+        "value": "420px"
+      },
+      {
+        "name": "histogram-label-rotation",
+        "value": "430px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Export action.",
+      "html": "<button class=\"ds-button\">Download grades CSV</button>",
+      "css": ".ds-button{font:600 14px \"Segoe UI\",Arial,sans-serif;min-height:42px;padding:9px 16px;border:1px solid transparent;border-radius:7px;cursor:pointer;transition:background-color .15s}.ds-button:focus-visible{outline:3px solid var(--purple,#5b3cc4);outline-offset:3px}.ds-button:disabled{background:#efedf4;color:#605d73;border-color:#e3dfeb;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-button{background:var(--purple,#5b3cc4);color:#fff}.ds-button:hover:not(:disabled){background:var(--purple-dark,#41288f)}"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Reversible and pagination actions.",
+      "html": "<button class=\"ds-button\">Undo change</button>",
+      "css": ".ds-button{font:600 14px \"Segoe UI\",Arial,sans-serif;min-height:42px;padding:9px 16px;border:1px solid transparent;border-radius:7px;cursor:pointer;transition:background-color .15s}.ds-button:focus-visible{outline:3px solid var(--purple,#5b3cc4);outline-offset:3px}.ds-button:disabled{background:#efedf4;color:#605d73;border-color:#e3dfeb;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}.ds-button{background:#fff;color:var(--ink,#222039);border-color:var(--line,#dedbe9)}.ds-button:hover:not(:disabled){background:var(--lavender,#f5f3ff);border-color:#a79acb}"
+    },
+    {
+      "name": "Labelled input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Visible label with shared keyboard focus.",
+      "html": "<label class=\"ds-label\" for=\"ds-search\">Find a student</label><input class=\"ds-input\" id=\"ds-search\" placeholder=\"Search by BITS ID\">",
+      "css": ".ds-label{display:block;font:600 13px \"Segoe UI\",Arial,sans-serif;margin-bottom:7px}.ds-input{font:14px \"Segoe UI\",Arial,sans-serif;min-height:42px;padding:9px 11px;border:1px solid #bcb6cc;border-radius:7px;background:#fff;color:var(--ink,#222039)}.ds-input::placeholder{color:#706981}.ds-input:focus-visible{outline:3px solid var(--purple,#5b3cc4);outline-offset:3px}.ds-input:disabled{color:#605d73;background:#f3f1f7}"
+    },
+    {
+      "name": "Workflow navigation",
+      "kind": "nav",
+      "description": "Numbered links with current-step state.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Grading workflow\"><a href=\"#upload\" aria-current=\"step\"><span>1</span>Upload marks</a><a href=\"#review\"><span>2</span>Review marks</a></nav>",
+      "css": ".ds-nav{display:flex;border-block:1px solid var(--line,#dedbe9);font:600 13px \"Segoe UI\",Arial,sans-serif}.ds-nav a{display:flex;flex:1;align-items:center;gap:10px;padding:14px 0;color:var(--muted,#605d73);text-decoration:none}.ds-nav span{width:23px;height:23px;border:1px solid #bdb5d2;border-radius:50%;display:grid;place-items:center;font-size:12px}.ds-nav a:hover,.ds-nav a[aria-current]{color:var(--purple-dark,#41288f)}.ds-nav a[aria-current] span{background:var(--purple,#5b3cc4);border-color:var(--purple,#5b3cc4);color:#fff}.ds-nav a:focus-visible{outline:3px solid var(--purple,#5b3cc4);outline-offset:3px}"
+    },
+    {
+      "name": "Grade badge",
+      "kind": "chip",
+      "description": "Assigned and pending status; noninteractive.",
+      "html": "<span class=\"ds-badge\">A-</span> <span class=\"ds-badge ds-pending\">Pending</span>",
+      "css": ".ds-badge{display:inline-block;min-width:36px;padding:2px 8px;background:#eee9fc;color:var(--purple-dark,#41288f);font:650 13px \"Segoe UI\",Arial,sans-serif;text-align:center;border-radius:4px}.ds-pending{background:#f2eef1;color:var(--muted,#605d73);font-size:12px}"
+    },
+    {
+      "name": "Work panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat bordered reading surface.",
+      "html": "<section class=\"ds-panel\"><h2>Grade ranges</h2><p>Inclusive boundaries, from 0 to 100.</p></section>",
+      "css": ".ds-panel{background:var(--paper,#fff);color:var(--ink,#222039);border:1px solid var(--line,#dedbe9);border-radius:var(--radius,12px);padding:24px;font:14px/1.5 \"Segoe UI\",Arial,sans-serif}.ds-panel h2{margin:0;font-size:19px;line-height:1.35;letter-spacing:-.015em}.ds-panel p{margin:4px 0 0;font-size:13px;color:var(--muted,#605d73)}@media(max-width:1000px){.ds-panel{padding:20px}}@media(max-width:420px){.ds-panel{padding:17px}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Incumbent purple-and-white console (no new metaphor selected)",
+    "overview": "The incumbent purple-and-white console uses light work surfaces, restrained borders and dense, readable controls. This records the implemented Stage 2 extension, sourced from `console.css` and `BITS_Digital_CodeForge_Challenge.html`; it does not introduce a new identity or creative metaphor.\n\nCourse context and numerical alignment organize a browser-local grading workspace. The visible unofficial-prototype notice is part of the identity context; no official branding assets are implied.",
+    "keyCharacteristics": [
+      "Purple actions on a pale lavender canvas.",
+      "White bordered panels with compact, labelled controls.",
+      "Aligned numerical data and explicit validation states."
+    ],
+    "rules": [
+      {
+        "name": "The Explicit State Rule",
+        "body": "Pair validation colors with readable messages and field semantics.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "**Do** preserve labelled controls, visible keyboard focus and explanatory validation messages.",
+      "**Do** keep numeric columns aligned and chart labels readable at narrow widths.",
+      "**Do** describe pending and disabled states explicitly before export is available."
+    ],
+    "donts": [
+      "**Don't** convey grade validity by color alone.",
+      "**Don't** animate data changes or retain smooth scrolling under reduced-motion preference.",
+      "**Don't** treat the incumbent system-font heading or lettered brand tile as a new display identity to propagate.\r"
+    ]
+  }
+}

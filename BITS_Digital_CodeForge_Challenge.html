@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="An unofficial CodeForge challenge prototype for reviewing marks and configuring course grades.">
+<meta property="og:title" content="Grading Console · CodeForge">
+<meta property="og:description" content="Review marks, configure grade ranges and export results. An unofficial challenge prototype.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://codeforge-grading-console.foamy-tapir-7760.chatgpt.site/">
+<meta property="og:image" content="https://codeforge-grading-console.foamy-tapir-7760.chatgpt.site/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Grading Console · CodeForge">
+<meta name="twitter:description" content="An unofficial challenge prototype for reviewing marks and configuring grades.">
+<meta name="twitter:image" content="https://codeforge-grading-console.foamy-tapir-7760.chatgpt.site/og.png">
+<title>Grading Console · CodeForge</title>
+<link rel="stylesheet" href="console.css">
+<script src="vendor/xlsx.full.min.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to grading workspace</a>
+<div class="container">
+<header class="masthead">
+ <div class="identity"><div class="brand-mark" aria-hidden="true">G</div><div><h1>Grading Console</h1><p>BITS Pilani Digital · CodeForge challenge</p></div></div>
+ <p class="prototype"><strong>Unofficial prototype</strong>Created for the challenge. Not for actual academic grading.</p>
+</header>
+<nav aria-label="Grading workflow"><ol class="workflow">
+ <li><a id="stepUpload" href="#upload" aria-current="step"><span class="step">1</span>Upload marks</a></li>
+ <li><a id="stepReview" href="#review"><span class="step">2</span>Review marks</a></li>
+ <li><a id="stepConfigure" href="#configure"><span class="step">3</span>Set ranges</a></li>
+ <li><a id="stepExport" href="#export"><span class="step">4</span>Export grades</a></li>
+</ol></nav>
+<main id="main">
+<section id="upload" class="panel" aria-labelledby="uploadTitle">
+ <div class="import-heading"><h2 id="uploadTitle">Start with your marks</h2><p>Your workbook stays in this browser.</p></div>
+ <div class="controls">
+  <div class="file-field"><label for="file">Marks workbook</label><input type="file" id="file" accept=".xlsx" aria-describedby="fileHelp"><span id="fileHelp" class="field-hint">Excel (.xlsx) · first worksheet only</span></div>
+  <div><label for="instructor">Instructor name</label><input id="instructor" placeholder="Enter your name" autocomplete="name" aria-describedby="nameHelp"><span id="nameHelp" class="field-hint">Required for export</span></div>
+  <div><label for="course">Course</label><select id="course" disabled><option value="">Upload a workbook first</option></select><span class="field-hint">Settings are kept separately for each course</span></div>
+ </div>
+ <div class="import-foot"><details class="file-guidance"><summary>What should my workbook contain?</summary><p>Exactly three columns: <b>BITS ID</b> (or Student’s BITS ID), <b>Course</b>, and <b>Total Marks</b>. Marks must be whole numbers from 0 to 100; fractions are rejected without rounding. Keep IDs as text if they start with zero.</p><p>Leave out students receiving NC. Duplicate IDs within a course are rejected. A new upload replaces this session’s data and range settings.</p></details><p id="fileStatus" role="status">No workbook loaded</p></div>
+ <div id="uploadError" class="error" role="alert"></div>
+</section>
+<div class="context-line"><div><h2 id="courseTitle">Your grading workspace</h2><p id="courseContext">Upload a workbook and select a course to begin.</p></div><div class="session">Session time <b id="timerText">00:00</b><span id="timerArc" hidden></span></div></div>
+<div id="welcome" class="sr-only" role="status"></div>
+<div class="workspace">
+ <section id="review" class="panel" aria-labelledby="reviewTitle">
+  <div class="section-head"><div><h2 id="reviewTitle">Marks overview</h2><p>Understand the cohort before setting grades.</p></div></div>
+  <div class="stats"><div class="stat">Min<b id="min">—</b></div><div class="stat">Max<b id="max">—</b></div><div class="stat">Average<b id="avg">—</b></div><div class="stat">Median<b id="med">—</b></div></div>
+  <div class="chart-heading"><h3>Marks distribution</h3><p>Number of students</p></div>
+  <div class="hist-wrap"><canvas id="hist" width="380" height="210" role="img" aria-label="Marks histogram. Upload a workbook to see the distribution."></canvas><div id="chartEmpty" class="empty-chart"><strong>A clearer picture of your cohort</strong><p>Marks and grade distributions will appear here after you select a course.</p></div></div>
+  <div class="distribution-section"><div class="chart-heading"><h3>Grade distribution</h3><p id="distributionTotal">Awaiting course selection</p></div><div id="distribution" class="distribution"></div><p id="distributionHint" class="hint">Each student is counted once using the current grade ranges.</p><div id="gradeSummary" class="sr-only" aria-live="polite"></div></div>
+ </section>
+ <section id="configure" class="panel" aria-labelledby="configureTitle">
+  <div class="section-head"><div><h2 id="configureTitle">Grade ranges</h2><p>Inclusive boundaries, from 0 to 100.</p></div></div>
+  <div id="rangeEmpty" class="hint">Select a course to configure its grade ranges.</div>
+  <div id="rangeHeader" class="range-head" hidden><span>Grade</span><span>Minimum</span><span>Maximum</span></div>
+  <div id="grades" class="grade-grid"></div>
+  <div id="rangeError" class="error" role="alert"></div><p id="rangeState" class="range-state" hidden></p>
+  <div class="range-actions"><button id="undoRanges" class="secondary" disabled>Undo change</button><button id="resetRanges" class="secondary" disabled>Reset defaults</button></div>
+  <p class="hint">Changing a minimum also adjusts the next grade’s maximum. Edits stay with this course until you upload another workbook or close this page.</p>
+ </section>
+</div>
+<section class="panel results-panel" id="results" aria-labelledby="resultsTitle">
+ <div class="section-head"><div><h2 id="resultsTitle">Student results</h2><p>Check individual grades before you export.</p></div><span class="hint">Preview updates as ranges change</span></div>
+ <div class="table-tools"><div class="search-field"><label for="studentSearch">Find a student</label><input id="studentSearch" type="search" placeholder="Search by BITS ID" disabled></div><div class="filter-field"><label for="gradeFilter">Grade</label><select id="gradeFilter" disabled><option value="">All grades</option><option>A</option><option>A-</option><option>B</option><option>B-</option><option>C</option><option>C-</option><option>D</option><option>E</option></select></div></div>
+ <div class="table-wrap"><table><caption class="sr-only">Selected course student results, 25 students per page</caption><thead><tr><th scope="col">BITS ID</th><th scope="col">Marks / 100</th><th scope="col">Assigned grade</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+ <div class="table-footer"><p id="previewStatus" role="status">Select a course to preview student grades.</p><div class="pagination"><button id="prevPage" class="secondary" disabled>Previous</button><span id="pageStatus">Page 0 of 0</span><button id="nextPage" class="secondary" disabled>Next</button></div></div>
+</section>
+<section class="panel export-panel" id="export" aria-labelledby="exportTitle">
+ <div class="section-head"><div><h2 id="exportTitle">Review &amp; export</h2><p>Confirm the course and ranges below. Your CSV includes the full cohort, regardless of preview filters.</p></div></div>
+ <div class="export-layout"><div><dl class="export-facts"><div><dt>Instructor</dt><dd id="exportInstructor">Not entered</dd></div><div><dt>Course</dt><dd id="exportCourse">Not selected</dd></div><div><dt>Students to export</dt><dd id="exportCount">0</dd></div></dl><div id="exportRanges" class="export-bands"></div></div><div class="export-action"><button id="download" disabled>Download grades CSV</button><p id="exportFilename">Choose a course to prepare your export.</p></div></div>
+ <p id="exportBlocker">Upload a workbook and select a course to continue.</p><div id="thankyou" class="notice" role="status"></div>
+</section>
+</main>
+<footer class="footer"><p>CodeForge challenge prototype · No data is sent to a server.</p><p>Session settings are cleared when this page closes.</p></footer>
+</div>
+
+<script>
+/* ===== TIMER ===== */
+let gradingStartTime = Date.now();
+let timerInterval=null;
+const circumference = 2 * Math.PI * 40;
+
+function startTimer(){
+  const arc=document.getElementById("timerArc");
+  const text=document.getElementById("timerText");
+
+  clearInterval(timerInterval);
+  const tick=()=>{
+    const elapsed = Date.now() - gradingStartTime;
+    const min = Math.floor(elapsed/60000);
+    const sec = Math.floor((elapsed%60000)/1000);
+
+    text.innerText =
+      String(min).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+
+    const progress = Math.min(elapsed/3600000,1);
+    arc.style.strokeDashoffset =
+      circumference * (1-progress);
+  };
+  tick();
+  timerInterval=setInterval(tick,1000);
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  startTimer();
+});
+
+/* ===== GRADING ===== */
+// Explicit references avoid relying on browser-created window properties.
+const [file,course,instructor,welcome,grades,resetRanges,rangeError,download,hist,
+  min,max,avg,med,gradeSummary,thankyou,uploadError] =
+  ['file','course','instructor','welcome','grades','resetRanges','rangeError','download','hist',
+   'min','max','avg','med','gradeSummary','thankyou','uploadError'].map(id=>document.getElementById(id));
+
+const GRADES=["A","A-","B","B-","C","C-","D","E"];
+const DEFAULTS={
+  "A":[80,100],"A-":[70,79],"B":[60,69],"B-":[50,59],
+  "C":[40,49],"C-":[30,39],"D":[20,29],"E":[0,19]
+};
+
+let data=[];
+let previousSummary={};
+let finalizeCount = 0;
+let uploadVersion=0;
+let histogramFrame=null;
+const el=id=>document.getElementById(id);
+const courseSettings=new Map();
+let previewPage=0;
+const PAGE_SIZE=25;
+let loadedFilename='';
+
+function selectedRows(){return data.filter(d=>d.Course===course.value);}
+function currentBands(){return GRADES.map(g=>[el(g+'min').value,el(g+'max').value]);}
+function defaultBands(){return GRADES.map(g=>DEFAULTS[g].map(String));}
+function setting(){
+  if(!courseSettings.has(course.value)) courseSettings.set(course.value,{bands:defaultBands(),history:[]});
+  return courseSettings.get(course.value);
+}
+function recordEdit(){
+  const state=setting(),next=currentBands();
+  if(JSON.stringify(next)!==JSON.stringify(state.bands)){
+    state.history.push(state.bands.map(pair=>[...pair]));
+    if(state.history.length>50) state.history.shift();
+    state.bands=next;
+  }
+}
+function applyBands(bands){GRADES.forEach((g,i)=>{el(g+'min').value=bands[i][0];el(g+'max').value=bands[i][1];});}
+function resetFilters(){previewPage=0;el('studentSearch').value='';el('gradeFilter').value='';}
+function setStep(id){
+  ['stepUpload','stepReview','stepConfigure','stepExport'].forEach(key=>{
+    if(key===id) el(key).setAttribute('aria-current','step');else el(key).removeAttribute('aria-current');
+  });
+}
+
+function clearCourse(){
+  cancelAnimationFrame(histogramFrame);
+  hist.getContext('2d').clearRect(0,0,hist.width,hist.height);
+  grades.replaceChildren();
+  gradeSummary.replaceChildren();
+  previousSummary={};
+  [min,max,avg,med].forEach(el=>el.textContent='—');
+  rangeError.textContent='';
+  welcome.textContent='';
+  thankyou.textContent='';
+  download.disabled=true;
+  download.classList.remove('enabled');
+  resetRanges.disabled=true;
+  el('undoRanges').disabled=true;
+  el('rangeEmpty').hidden=false;el('rangeHeader').hidden=true;el('rangeState').hidden=true;
+  el('chartEmpty').hidden=false;
+  el('distribution').replaceChildren();
+  el('distributionTotal').textContent='Awaiting course selection';
+  el('distributionHint').textContent='Each student is counted once using the current grade ranges.';
+  el('studentRows').replaceChildren();
+  el('studentSearch').disabled=true;el('gradeFilter').disabled=true;
+  el('previewStatus').textContent='Select a course to preview student grades.';
+  el('prevPage').disabled=true;el('nextPage').disabled=true;
+  el('pageStatus').textContent='Page 0 of 0';
+  el('courseTitle').textContent='Your grading workspace';
+  el('courseContext').textContent=data.length ? 'Choose a course above to review its marks.' : 'Upload a workbook and select a course to begin.';
+  hist.setAttribute('aria-label','Marks histogram. Select a course to see the distribution.');
+  resetFilters();renderExport('');setStep(data.length?'stepReview':'stepUpload');
+}
+
+function readRows(wb){
+  if(!wb.SheetNames.length) throw new Error('The workbook has no worksheets.');
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',blankrows:true});
+  const names=(rows[0]||[]).map(v=>String(v).trim().replace(/^Student[’']s BITS ID$/,'BITS ID'));
+  if(names.length!==3 || new Set(names).size!==3 || !['BITS ID','Course','Total Marks'].every(n=>names.includes(n)))
+    throw new Error('Use exactly three columns: BITS ID, Course, Total Marks.');
+  const result=[],seen=new Set();
+  rows.slice(1).forEach((row,index)=>{
+    if(row.every(v=>v==='' || v===null)) return;
+    const get=n=>row[names.indexOf(n)];
+    const id=String(get('BITS ID')??'').trim(), name=String(get('Course')??'').trim();
+    const raw=get('Total Marks');
+    const mark=typeof raw==='number' ? raw : typeof raw==='string' && /^\d+$/.test(raw.trim()) ? Number(raw.trim()) : NaN;
+    if(row.length>3 || !id || !name || !Number.isInteger(mark) || mark<0 || mark>100)
+      throw new Error(`Row ${index+2}: provide a BITS ID, course and whole-number mark from 0 to 100.`);
+    const key=JSON.stringify([id,name]);
+    if(seen.has(key)) throw new Error(`Row ${index+2}: duplicate BITS ID in the same course.`);
+    seen.add(key);
+    result.push({'BITS ID':id,Course:name,'Total Marks':mark});
+  });
+  if(!result.length) throw new Error('The first worksheet has no student records.');
+  return result;
+}
+
+file.onchange=e=>{
+  const selected=e.target.files[0];
+  if(!selected) return;
+  const version=++uploadVersion;
+  data=[];
+  courseSettings.clear();loadedFilename='';
+  course.replaceChildren(new Option('Select a course to begin',''));
+  course.disabled=true;
+  clearCourse();
+  uploadError.textContent='';
+  el('fileStatus').textContent='Reading workbook…';el('upload').setAttribute('aria-busy','true');
+  const fail=message=>{
+    if(version!==uploadVersion) return;
+    uploadError.textContent=message;
+    el('fileStatus').textContent='Workbook not loaded';el('upload').setAttribute('aria-busy','false');
+    course.disabled=false;
+    file.value=''; // Allow retry after a failed import; retain successful file names.
+  };
+  if(!/\.xlsx$/i.test(selected.name)) return fail('Please upload an .xlsx workbook.');
+  if(typeof XLSX==='undefined') return fail('The Excel reader could not load. Restore the vendor folder and reload.');
+  const r=new FileReader();
+  r.onload=ev=>{
+    if(version!==uploadVersion) return;
+    try{
+      const bytes=new Uint8Array(ev.target.result);
+      if(bytes[0]!==0x50 || bytes[1]!==0x4b) throw new Error('This file is not an XLSX workbook.');
+      const wb=XLSX.read(bytes,{type:'array'});
+      data=readRows(wb);
+      [...new Set(data.map(d=>d.Course))].forEach(c=>course.add(new Option(c,c)));
+      course.disabled=false;
+      loadedFilename=selected.name;
+      el('fileStatus').textContent=`${loadedFilename} · ${data.length} students · ${course.options.length-1} courses`;
+      el('upload').setAttribute('aria-busy','false');
+      el('courseContext').textContent='Workbook ready. Select a course above to begin.';setStep('stepReview');
+      gradingStartTime=Date.now();
+      finalizeCount=0;
+      startTimer();
+    }catch(error){fail('Unable to import: '+error.message);}
+  };
+  r.onerror=()=>fail('Unable to read the file. Please try again.');
+  r.onabort=()=>fail('File reading was interrupted. Please try again.');
+  r.readAsArrayBuffer(selected);
+};
+
+course.onchange=()=>{
+  clearCourse();
+  if(!course.value) return;
+  welcome.textContent=`Reviewing ${course.value}.`;
+  buildGradeUI();
+  resetRanges.disabled=false;
+  updateAll();
+  setStep('stepConfigure');
+};
+
+instructor.oninput=()=>{
+  if(!course.value){renderExport('');return;}
+  welcome.textContent=instructor.value.trim() ? `Welcome ${instructor.value.trim().toUpperCase()}. Please review and finalize grading.` : 'Enter an instructor name to finalize grading.';
+  updateAll();
+};
+
+function cascadeMaxFrom(index){
+  for(let i=index+1;i<Math.min(index+2,GRADES.length);i++){
+    const prevMin=+document.getElementById(GRADES[i-1]+"min").value;
+    document.getElementById(GRADES[i]+"max").value=prevMin-1;
+  }
+}
+
+function buildGradeUI(){
+  grades.innerHTML="";
+  const saved=setting().bands;
+  el('rangeEmpty').hidden=true;el('rangeHeader').hidden=false;
+  GRADES.forEach((g,idx)=>{
+    const card=document.createElement("div");
+    card.className="grade";
+
+    const minSel=document.createElement("select");
+    const maxSel=document.createElement("select");
+
+    for(let i=0;i<=100;i++){
+      minSel.add(new Option(i,i,i===DEFAULTS[g][0],i===DEFAULTS[g][0]));
+      maxSel.add(new Option(i,i,i===DEFAULTS[g][1],i===DEFAULTS[g][1]));
+    }
+
+    minSel.id=g+"min";
+    maxSel.id=g+"max";
+    minSel.value=saved[idx][0];maxSel.value=saved[idx][1];
+    minSel.setAttribute('aria-label',`${g} minimum mark`);maxSel.setAttribute('aria-label',`${g} maximum mark`);
+    minSel.setAttribute('aria-describedby','rangeError');maxSel.setAttribute('aria-describedby','rangeError');
+
+    minSel.onchange=()=>{
+      cascadeMaxFrom(idx);
+      recordEdit();previewPage=0;
+      updateAll();
+    };
+
+    maxSel.onchange=()=>{
+      recordEdit();previewPage=0;
+      updateAll();
+    };
+
+    card.innerHTML=`<strong>${g}</strong><div class="min"></div>`;
+    card.querySelector(".min").appendChild(minSel);
+
+    const maxDiv=document.createElement("div");
+    maxDiv.className="max";
+    maxDiv.appendChild(maxSel);
+    card.appendChild(maxDiv);
+
+    grades.appendChild(card);
+  });
+}
+
+resetRanges.onclick=()=>{
+  if(!course.value || !document.getElementById('Amin')) return;
+  if(!confirm("This will reset all grade ranges to the default values.\nDo you want to continue?")) return;
+  GRADES.forEach(g=>{
+    document.getElementById(g+"min").value=DEFAULTS[g][0];
+    document.getElementById(g+"max").value=DEFAULTS[g][1];
+  });
+  recordEdit();previewPage=0;
+  updateAll();
+};
+
+function validateRanges(){
+  let message='';
+  const flag=(g,text)=>{
+    const mi=el(g+'min'),ma=el(g+'max');
+    mi?.setAttribute('aria-invalid','true');ma?.setAttribute('aria-invalid','true');
+    mi?.closest('.grade').classList.add('invalid');
+    if(!message) message=text;
+  };
+  GRADES.forEach(g=>{[el(g+'min'),el(g+'max')].forEach(s=>s?.setAttribute('aria-invalid','false'));el(g+'min')?.closest('.grade').classList.remove('invalid');});
+  for(let i=0;i<GRADES.length;i++){
+    const g=GRADES[i];
+    const minRaw=document.getElementById(g+'min')?.value;
+    const maxRaw=document.getElementById(g+'max')?.value;
+    const minV=Number(minRaw),maxV=Number(maxRaw);
+    if(minRaw==null || maxRaw==null || minRaw==='' || maxRaw==='' ||
+       !Number.isInteger(minV) || !Number.isInteger(maxV) || minV<0 || maxV>100)
+      {flag(g,`${g}: choose both bounds from 0 to 100.`);continue;}
+    if(minV>maxV) flag(g,`${g}: minimum cannot exceed maximum.`);
+    if((i===0 && maxV!==100) || (i===GRADES.length-1 && minV!==0))
+      flag(g,i===0 ? 'A: maximum must be 100 so every mark is covered.' : 'E: minimum must be 0 so every mark is covered.');
+    if(i>0){
+      const prevMin=+document.getElementById(GRADES[i-1]+"min").value;
+      if(maxV!==prevMin-1) flag(g,`${g}: maximum must be ${prevMin-1} to meet ${GRADES[i-1]} without a gap or overlap.`);
+    }
+  }
+  return message;
+}
+
+function updateAll(){
+  thankyou.textContent='';
+  if(!course.value){clearCourse();return;}
+  const err=validateRanges();
+  rangeError.innerText=err;
+  download.disabled=!!err || !instructor.value.trim() || !data.some(d=>d.Course===course.value);
+  if(!download.disabled) download.classList.add("enabled");
+  else download.classList.remove("enabled");
+  drawHistogram();
+  computeStats();
+  if(!err) computeGradeSummary();
+  else {gradeSummary.replaceChildren();previousSummary={};}
+  el('courseTitle').textContent=course.value;
+  el('courseContext').textContent=`${selectedRows().length} students · Marks out of 100 · ${loadedFilename}`;
+  el('chartEmpty').hidden=true;
+  el('rangeState').hidden=!!err;
+  el('rangeState').textContent='Valid ranges · Every mark from 0 to 100 is covered';
+  el('undoRanges').disabled=setting().history.length===0;
+  renderDistribution(err);renderStudents(err);renderExport(err);
+}
+
+function drawHistogram(){
+  cancelAnimationFrame(histogramFrame);
+  const width=hist.clientWidth||380,height=240,ratio=window.devicePixelRatio||1;
+  hist.width=Math.round(width*ratio);hist.height=Math.round(height*ratio);
+  const ctx=hist.getContext("2d");
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  ctx.clearRect(0,0,width,height);
+
+  const marks=data.filter(d=>d.Course===course.value).map(d=>d["Total Marks"]);
+  if(!marks.length) return;
+
+  let bins=Array(10).fill(0);
+  marks.forEach(m=>bins[Math.min(9,Math.floor(m/10))]++);
+
+  const left=12,step=(width-24)/10,base=166,compact=width<430;
+  ctx.strokeStyle='#dedbe9';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(left,base);ctx.lineTo(width-left,base);ctx.stroke();
+  const labels=[];
+  bins.forEach((v,i)=>{
+    const h=v/Math.max(...bins)*132,x=left+i*step,center=x+step/2;
+    ctx.fillStyle='#5b3cc4';ctx.fillRect(x+4,base-h,step-8,h);
+    ctx.fillStyle='#605d73';ctx.font='12px Segoe UI, Arial';ctx.textAlign='center';
+    const label=`${i*10}–${i===9?100:i*10+9}`;
+    ctx.save();
+    if(compact){ctx.translate(center+5,base+16);ctx.rotate(-Math.PI/4);ctx.textAlign='right';ctx.fillText(label,0,0);}
+    else ctx.fillText(label,center,base+21);
+    ctx.restore();
+    ctx.fillStyle='#222039';ctx.font='12px Segoe UI, Arial';ctx.textAlign='center';ctx.fillText(String(v),center,base-8-h);
+    labels.push(`${label}: ${v} students`);
+  });
+  ctx.fillStyle='#605d73';ctx.font='12px Segoe UI, Arial';ctx.fillText('Total marks / 100',width/2,height-5);
+  hist.setAttribute('aria-label','Marks distribution. '+labels.join('; '));
+}
+
+function computeStats(){
+  const m=data.filter(d=>d.Course===course.value)
+    .map(d=>d["Total Marks"]).sort((a,b)=>a-b);
+  if(!m.length){[min,max,avg,med].forEach(el=>el.textContent='—');return;}
+  min.textContent=m[0];
+  max.textContent=m[m.length-1];
+  avg.textContent=(m.reduce((a,b)=>a+b,0)/m.length).toFixed(2);
+  med.textContent=m.length%2?m[Math.floor(m.length/2)]
+    :(m[m.length/2-1]+m[m.length/2])/2;
+}
+
+function computeGradeSummary(){
+  let counts={}; GRADES.forEach(g=>counts[g]=0);
+  data.filter(d=>d.Course===course.value).forEach(d=>{
+    for(const g of GRADES){
+      const mi=+document.getElementById(g+"min").value;
+      const ma=+document.getElementById(g+"max").value;
+      if(d["Total Marks"]>=mi && d["Total Marks"]<=ma){
+        counts[g]++; break;
+      }
+    }
+  });
+  gradeSummary.innerHTML="";
+  GRADES.forEach(g=>{
+    const span=document.createElement("span");
+    span.textContent=`${g}: ${counts[g]}`;
+    if(previousSummary[g]!==undefined && previousSummary[g]!==counts[g]){
+      span.classList.add("pulse");
+      setTimeout(()=>span.classList.remove("pulse"),30);
+    }
+    gradeSummary.appendChild(span);
+    previousSummary[g]=counts[g];
+  });
+}
+
+function gradeFor(mark){
+  return GRADES.find(g=>mark>=Number(el(g+'min').value) && mark<=Number(el(g+'max').value));
+}
+
+function renderDistribution(error){
+  const rows=selectedRows(),root=el('distribution');root.replaceChildren();
+  el('distributionTotal').textContent=`${rows.length} students`;
+  el('distributionHint').textContent=error ? 'Fix the highlighted ranges to see a valid grade distribution.' : 'Percentages use all students in this course.';
+  if(error) return;
+  GRADES.forEach(g=>{
+    const count=previousSummary[g]||0,percent=rows.length?count/rows.length*100:0;
+    const row=document.createElement('div');row.className='dist-row';
+    const label=document.createElement('b');label.textContent=g;
+    const track=document.createElement('div');track.className='dist-track';track.setAttribute('aria-hidden','true');
+    const fill=document.createElement('div');fill.className='dist-fill';fill.style.width=percent+'%';track.append(fill);
+    const value=document.createElement('span');value.className='dist-value';value.textContent=`${count} · ${percent.toFixed(1)}%`;
+    row.append(label,track,value);root.append(row);
+  });
+}
+
+function renderStudents(error){
+  const selected=selectedRows(),query=el('studentSearch').value.trim().toLowerCase();
+  el('studentSearch').disabled=!selected.length;
+  el('gradeFilter').disabled=!!error || !selected.length;
+  if(error) el('gradeFilter').value='';
+  const filter=el('gradeFilter').value;
+  const rows=selected.filter(d=>d['BITS ID'].toLowerCase().includes(query) && (!filter || gradeFor(d['Total Marks'])===filter));
+  const pages=Math.ceil(rows.length/PAGE_SIZE);
+  previewPage=Math.max(0,Math.min(previewPage,pages-1));
+  const root=el('studentRows');root.replaceChildren();
+  rows.slice(previewPage*PAGE_SIZE,(previewPage+1)*PAGE_SIZE).forEach(d=>{
+    const tr=document.createElement('tr');
+    for(const value of [d['BITS ID'],d['Total Marks']]){const td=document.createElement('td');td.textContent=value;tr.append(td);}
+    const td=document.createElement('td'),badge=document.createElement('span');badge.className='grade-badge'+(error?' pending':'');badge.textContent=error?'Pending':gradeFor(d['Total Marks']);td.append(badge);tr.append(td);root.append(tr);
+  });
+  el('previewStatus').textContent=rows.length ? `Showing ${previewPage*PAGE_SIZE+1}–${Math.min((previewPage+1)*PAGE_SIZE,rows.length)} of ${rows.length} students${query||filter?` (${selected.length} in course)`:''}${error?' · Grades pending valid ranges':''}` : 'No students match these filters. Clear the search or choose All grades.';
+  el('pageStatus').textContent=`Page ${pages?previewPage+1:0} of ${pages}`;
+  el('prevPage').disabled=previewPage===0;el('nextPage').disabled=!pages || previewPage>=pages-1;
+}
+
+function exportFilename(){
+  const name=course.value.replace(/[<>:"/\\|?*\u0000-\u001f]/g,'-').replace(/\s+/g,'-').replace(/^[.]+|[.]+$/g,'').slice(0,70)||'course';
+  const now=new Date(),date=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+  return `grades-${name}-${date}.csv`;
+}
+
+function renderExport(error){
+  const rows=selectedRows();
+  el('exportInstructor').textContent=instructor.value.trim()||'Not entered';
+  el('exportCourse').textContent=rows.length?course.value:'Not selected';
+  el('exportCount').textContent=String(rows.length);
+  el('exportRanges').replaceChildren();
+  if(rows.length && !error && el('Amin')) GRADES.forEach(g=>{
+    const span=document.createElement('span'),label=document.createElement('b');label.textContent=g;
+    span.append(label,document.createTextNode(`${el(g+'min').value}–${el(g+'max').value}`));el('exportRanges').append(span);
+  });
+  el('exportFilename').textContent=rows.length?exportFilename():'Choose a course to prepare your export.';
+  el('exportBlocker').textContent=!rows.length?'Upload a workbook and select a course to continue.':error?'Export is unavailable until the highlighted grade ranges are corrected.':!instructor.value.trim()?'Enter your instructor name above to enable export.':'Ready to export · All students in this course have an assigned grade.';
+}
+
+el('undoRanges').onclick=()=>{
+  if(!course.value) return;
+  const state=setting();if(!state.history.length) return;
+  state.bands=state.history.pop();applyBands(state.bands);previewPage=0;updateAll();
+};
+el('studentSearch').oninput=()=>{previewPage=0;renderStudents(validateRanges());};
+el('gradeFilter').onchange=()=>{previewPage=0;renderStudents(validateRanges());};
+el('prevPage').onclick=()=>{previewPage--;renderStudents(validateRanges());};
+el('nextPage').onclick=()=>{previewPage++;renderStudents(validateRanges());};
+['stepUpload','stepReview','stepConfigure','stepExport'].forEach(id=>el(id).onclick=()=>setStep(id));
+window.addEventListener('resize',()=>{
+  cancelAnimationFrame(histogramFrame);
+  if(course.value) histogramFrame=requestAnimationFrame(drawHistogram);
+});
+
+function csvCell(value){
+  let text=String(value);
+  if(/^[\s]*[=+@-]/.test(text) || /^[\t\r\n]/.test(text)) text="'"+text;
+  return /[",\r\n]/.test(text) ? '"'+text.replace(/"/g,'""')+'"' : text;
+}
+
+download.onclick=()=>{
+  updateAll();
+  if(download.disabled) return;
+  finalizeCount++;
+
+  const elapsed = Date.now() - gradingStartTime;
+  const minT=Math.floor(elapsed/60000);
+  const secT=Math.floor((elapsed%60000)/1000);
+
+  let csv=`Instructor,${csvCell(instructor.value.trim())}\r\nCourse,${csvCell(course.value)}\r\n\r\nBITS ID,Total Marks,Grade\r\n`;
+  data.filter(d=>d.Course===course.value).forEach(d=>{
+    for(const g of GRADES){
+      const mi=+document.getElementById(g+"min").value;
+      const ma=+document.getElementById(g+"max").value;
+      if(d["Total Marks"]>=mi && d["Total Marks"]<=ma){
+        csv+=[d['BITS ID'],d['Total Marks'],g].map(csvCell).join(',')+'\r\n';
+        break;
+      }
+    }
+  });
+
+  const a=document.createElement("a");
+  const url=URL.createObjectURL(new Blob(['\ufeff',csv],{type:"text/csv;charset=utf-8"}));
+  a.href=url;
+  a.download=exportFilename();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setStep('stepExport');
+
+  if(finalizeCount === 1){
+    thankyou.innerText =
+      `CSV download started for ${course.value}: ${selectedRows().length} students. Session time: ${minT} min ${secT} sec.`;
+  } else {
+    thankyou.innerText =
+      `Updated CSV download started for ${course.value}: ${selectedRows().length} students. Export ${finalizeCount} this session.`;
+  }
+};
+clearCourse();
+</script>
+</body>
+</html>
