@@ -93,21 +93,77 @@ npm.cmd run build
 node scripts/verify-build.cjs
 ```
 
-## Project Structure
+## Repository Contents
+
+The following is the complete source and evidence set committed to GitHub. The repository is intentionally small: the current app is a static HTML/CSS page, while the remaining files document, test and package it.
+
+### Application files
 
 | Path | Purpose |
 | --- | --- |
-| [`BITS_Digital_CodeForge_Challenge.html`](BITS_Digital_CodeForge_Challenge.html) | Current application markup and client-side grading logic. |
-| [`console.css`](console.css) | Responsive visual design and accessibility states. |
-| [`vendor/xlsx.full.min.js`](vendor/xlsx.full.min.js) | Vendored SheetJS Excel reader/writer used at runtime. |
-| [`scripts/build.cjs`](scripts/build.cjs) | Creates the allowlisted deployment worker in `dist/server/index.js`. |
-| [`scripts/serve.cjs`](scripts/serve.cjs) | Serves the generated worker locally on port `4173`. |
-| [`scripts/verify-build.cjs`](scripts/verify-build.cjs) | Checks public assets, private routes, methods and source consistency. |
+| [`BITS_Digital_CodeForge_Challenge.html`](BITS_Digital_CodeForge_Challenge.html) | Current Stage 2 application markup and client-side grading logic. This is the file to edit and run. |
+| [`console.css`](console.css) | Responsive visual design, layout, validation states and accessibility styling. |
+| [`vendor/xlsx.full.min.js`](vendor/xlsx.full.min.js) | Vendored SheetJS Excel reader/writer used by the browser application. |
+| [`vendor/LICENSE`](vendor/LICENSE) | License for the vendored SheetJS distribution. |
+| [`public/og.png`](public/og.png) | Social preview image included in the deployment when present. |
+
+### Historical application snapshots
+
+| Path | Purpose |
+| --- | --- |
+| [`BITS_Digital_CodeForge_Challenge.stage1.html`](BITS_Digital_CodeForge_Challenge.stage1.html) | Stage 1 checkpoint retained for comparison and regression context. It is not used by the build. |
+| [`BITS_Digital_CodeForge_Challenge.original.html`](BITS_Digital_CodeForge_Challenge.original.html) | Untouched original challenge snapshot. It is historical reference only and is not deployed. |
+
+### Development and deployment scripts
+
+| Path | Purpose |
+| --- | --- |
+| [`package.json`](package.json) | Project metadata, npm scripts and dependency declarations. |
+| [`package-lock.json`](package-lock.json) | Locked dependency tree for reproducible npm installation. |
+| [`scripts/build.cjs`](scripts/build.cjs) | Creates the allowlisted Cloudflare Workers-compatible bundle in `dist/`. |
+| [`scripts/serve.cjs`](scripts/serve.cjs) | Serves the generated bundle locally on `127.0.0.1:4173`. |
+| [`scripts/verify-build.cjs`](scripts/verify-build.cjs) | Confirms deployed assets match source and private routes are not exposed. |
+| [`.openai/hosting.json`](.openai/hosting.json) | Hosting project metadata used by the build and deployment workflow. |
+| [`.gitignore`](.gitignore) | Excludes dependencies, generated output, local documents and generated test artifacts. |
+
+### Design records
+
+| Path | Purpose |
+| --- | --- |
+| [`.impeccable/design.json`](.impeccable/design.json) | Design-tool project metadata. |
+| [`.impeccable/surfaces/bits-digital-codeforge-challenge-html.md`](.impeccable/surfaces/bits-digital-codeforge-challenge-html.md) | Design surface record for the application page. |
+| [`PRODUCT.md`](PRODUCT.md) | Product users, purpose, constraints and principles. |
+| [`DESIGN.md`](DESIGN.md) | Implemented visual system, responsive behavior and accessibility decisions. |
+
+### Test code and evidence
+
+| Path | Purpose |
+| --- | --- |
 | [`tests/console.test.cjs`](tests/console.test.cjs) | jsdom unit and application behavior tests. |
-| [`tests/browser.cjs`](tests/browser.cjs) | Headless Edge end-to-end and responsive checks. |
-| [`tests/fixtures/`](tests/fixtures/) | Synthetic workbook and exported CSV test artifacts. |
-| [`public/`](public/) | Optional public assets such as the social preview image. |
-| `dist/` | Generated deployment output; do not edit by hand. |
+| [`tests/browser.cjs`](tests/browser.cjs) | Headless Edge end-to-end, download and responsive checks. |
+| [`tests/audit-results.txt`](tests/audit-results.txt) | Dependency/security audit evidence. |
+| [`tests/baseline-results.txt`](tests/baseline-results.txt) | Original baseline verification results. |
+| [`tests/final-results.txt`](tests/final-results.txt) | Stage 1 final regression results. |
+| [`tests/stage2-baseline.txt`](tests/stage2-baseline.txt) | Stage 2 baseline feature results before fixes. |
+| [`tests/stage2-browser-results.txt`](tests/stage2-browser-results.txt) | Stage 2 browser verification evidence. |
+| [`tests/stage2-final-results.txt`](tests/stage2-final-results.txt) | Stage 2 final regression results. |
+| [`tests/stage2-unit-results.txt`](tests/stage2-unit-results.txt) | Stage 2 unit-test evidence. |
+
+The browser test creates temporary workbook, CSV and screenshot outputs under `tests/fixtures/` and `.impeccable/review/`. Those generated files are ignored and are not part of the GitHub repository.
+
+### Historical project reports
+
+| Path | Purpose |
+| --- | --- |
+| [`STAGE1_BUG_LOG.md`](STAGE1_BUG_LOG.md) | Stage 1 defects, root causes, fixes and verification. |
+| [`STAGE1_TEST_REPORT.md`](STAGE1_TEST_REPORT.md) | Stage 1 test scope, commands, artifacts and limitations. |
+| [`STAGE2_ENHANCEMENT_LOG.md`](STAGE2_ENHANCEMENT_LOG.md) | Stage 2 feature changes and verification summary. |
+| [`STAGE2_TEST_REPORT.md`](STAGE2_TEST_REPORT.md) | Stage 2 test scope, design review and limitations. |
+| [`STAGE3_DEPLOYMENT.md`](STAGE3_DEPLOYMENT.md) | Deployment packaging status and publishing notes. |
+
+### Not committed
+
+The following local items are deliberately excluded by [`.gitignore`](.gitignore): `node_modules/` dependencies, generated `dist/` and `deployments/` directories, `.impeccable/review/` screenshots, generated files in `tests/fixtures/`, npm debug logs, operating-system metadata and the local DOCX source file. They can be recreated or are not needed to build, test or review the application.
 
 ## Build And Deployment
 
