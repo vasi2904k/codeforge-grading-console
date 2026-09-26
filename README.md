@@ -171,6 +171,33 @@ The following local items are deliberately excluded by [`.gitignore`](.gitignore
 
 The generated server is compatible with the project's Cloudflare Workers-style hosting configuration in `.openai/hosting.json`. The deployment is intentionally static and has no upload endpoint. Student marks remain in browser memory.
 
+### Live Application
+
+Reviewers should open the deployed application here:
+
+**https://codeforge-grading-console.vk64375.workers.dev**
+
+The source repository and documentation are available here:
+
+**https://github.com/vasi2904k/codeforge-grading-console**
+
+The application is hosted on Cloudflare Workers, not Netlify. The current Worker name is `codeforge-grading-console` and the account's `workers.dev` subdomain is `vk64375`. Cloudflare therefore produces the URL in this form:
+
+```text
+https://codeforge-grading-console.vk64375.workers.dev
+```
+
+Cloudflare's `workers.dev` URLs include the account subdomain. A custom domain requires a domain owned and configured by the account; `vasi-codeforge-grading-console.workers.dev` cannot be created as a standalone custom `workers.dev` address.
+
+To reproduce the deployment after authenticating Wrangler with `npx wrangler login`:
+
+```powershell
+npm.cmd run build
+npx wrangler deploy dist/server/index.js --name codeforge-grading-console --compatibility-date=2026-09-26
+```
+
+The live deployment was verified with HTTP `200` responses for `/` and `/console.css`, and an HTTP `404` response for `/package.json`.
+
 ## HTML Files
 
 The repository contains three HTML versions of the console. Only the current file is used by the build and local server:
