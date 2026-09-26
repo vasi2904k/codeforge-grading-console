@@ -12,7 +12,7 @@ The deployment contains only the console HTML, CSS, vendored Excel reader/licens
 - Provider: Cloudflare Workers
 - Worker name: `codeforge-grading-console`
 - Compatibility date: `2026-09-26`
-- Version ID: `c4bfcabd-4d57-40cd-b975-20cd9aca1238`
+- Version ID: `6a576594-c06d-47f4-90ad-54c188250440`
 
 ## Live Verification
 
